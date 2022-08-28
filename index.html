@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dave Lite</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+      body {
+        margin: 0;
+      }
+      #input-form {
+        padding: 15px;
+        position: absolute;
+        top: 250px;
+        left: 170px;
+      }
+      #input-form input {
+        padding: 10px;
+        font-size: 20px;
+        width: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="input-form">
+      <input id="name" type="text" name="name" placeholder="John" />
+    </div>
+    <script type="text/javascript">
+      var config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        physics: {
+          default: "arcade",
+          arcade: {
+            gravity: { y: 300 },
+            debug: false,
+          },
+        },
+
+        scene: {
+          preload: preload,
+          create: create,
+          update: update,
+        },
+      };
+
+      let game = new Phaser.Game(config);
+
+      function preload() {
+        this.load.html("form", "input.html");
+
+        //Background
+        this.load.image("sky", "assets/bg/back.png");
+        //Props
+        this.load.image("longPlatform", "assets/props/platform-long.png");
+        this.load.image("shortPlatform", "assets/props/small-platform.png");
+
+        //Player
+        // this.load.spritesheet('playerIdle', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
+        this.load.image(
+          "player1",
+          "assets/sprites/player/idle/player-idle-1.png"
+        );
+        this.load.image(
+          "player2",
+          "assets/sprites/player/idle/player-idle-2.png"
+        );
+        this.load.image(
+          "player3",
+          "assets/sprites/player/idle/player-idle-3.png"
+        );
+        this.load.image(
+          "player4",
+          "assets/sprites/player/idle/player-idle-4.png"
+        );
+
+        this.load.image("run1", "assets/sprites/player/run/player-run-1.png");
+        this.load.image("run2", "assets/sprites/player/run/player-run-2.png");
+        this.load.image("run3", "assets/sprites/player/run/player-run-3.png");
+        this.load.image("run4", "assets/sprites/player/run/player-run-4.png");
+        this.load.image("run5", "assets/sprites/player/run/player-run-5.png");
+        this.load.image("run6", "assets/sprites/player/run/player-run-6.png");
+
+        this.load.image(
+          "jump1",
+          "assets/sprites/player/jump/player-jump-1.png"
+        );
+        this.load.image(
+          "jump2",
+          "assets/sprites/player/jump/player-jump-2.png"
+        );
+
+        this.load.image("gem1", "assets/sprites/gem/gem-1.png");
+        this.load.image("gem2", "assets/sprites/gem/gem-2.png");
+        this.load.image("gem3", "assets/sprites/gem/gem-3.png");
+        this.load.image("gem4", "assets/sprites/gem/gem-4.png");
+        this.load.image("gem5", "assets/sprites/gem/gem-5.png");
+
+        this.load.image("eagle1", "assets/sprites/eagle/eagle-attack-1.png");
+        this.load.image("eagle2", "assets/sprites/eagle/eagle-attack-2.png");
+        this.load.image("eagle3", "assets/sprites/eagle/eagle-attack-3.png");
+        this.load.image("eagle4", "assets/sprites/eagle/eagle-attack-4.png");
+
+        this.load.image("doorOpen", "assets/props/door-opened.png");
+        this.load.image("doorClosed", "assets/props/door.png");
+
+        this.load.image("key", "assets/key.png");
+
+        this.load.image("heart", "assets/heart.png");
+
+        this.load.audio("music", "assets/platformer_level03.mp3");
+      }
+
+      let player;
+      let platforms;
+      let cursors;
+      let gameOver = false;
+      let gems;
+      let key;
+      let score = 0;
+      let doorOpen;
+      let doorClosed;
+      let eagle;
+      let heart;
+      let health = 0;
+      let gameOverText;
+
+      function create() {
+        this.scene.pause();
+
+        this.add.image(400, 300, "sky").setScale(3);
+
+        let message = this.add
+          .text(390, 250, "Enter your name and hit ENTER", {
+            color: "#000000",
+            fontSize: 25,
+            fontStyle: "bold",
+          })
+          .setOrigin(0.5);
+
+        let input = document.getElementById("name");
+        input.addEventListener("change", (event) => {
+          message.setText("Welcome, " + event.target.value);
+          message.setPosition(400, 30);
+          input.style.display = "none";
+          this.instruction.visible = false;
+          this.scene.resume();
+        });
+
+        platforms = this.physics.add.staticGroup();
+        platforms.create(760, 300, "longPlatform").setScale(3).refreshBody();
+        platforms.create(460, 450, "longPlatform").setScale(3).refreshBody();
+        platforms.create(160, 300, "longPlatform").setScale(3).refreshBody();
+        platforms.create(20, 150, "shortPlatform").setScale(3).refreshBody();
+
+        //Ground
+        platforms.create(0, 600, "longPlatform").setScale(3).refreshBody();
+        platforms.create(90, 600, "longPlatform").setScale(3).refreshBody();
+        platforms.create(180, 600, "longPlatform").setScale(3).refreshBody();
+        platforms.create(270, 600, "longPlatform").setScale(3).refreshBody();
+        platforms.create(360, 600, "longPlatform").setScale(3).refreshBody();
+        platforms.create(450, 600, "longPlatform").setScale(3).refreshBody();
+        platforms.create(540, 600, "longPlatform").setScale(3).refreshBody();
+        platforms.create(630, 600, "longPlatform").setScale(3).refreshBody();
+        platforms.create(720, 600, "longPlatform").setScale(3).refreshBody();
+        platforms.create(800, 600, "longPlatform").setScale(3).refreshBody();
+
+        //Instruction
+        this.instruction = this.add
+          .text(
+            390,
+            420,
+            "Game Instructions:    1.Collect the gems     2.Get the Key     3.Exit from door",
+            {
+              color: "#ffffff",
+              fontSize: 25,
+              fontStyle: "bold",
+              backgroundColor: "#000000",
+              padding: 40,
+              wordWrap: { width: 300, useAdvancedWrap: true },
+            }
+          )
+          .setOrigin(0.5);
+
+        //Door
+        doorClosed = this.physics.add
+          .staticImage(770, 545, "doorClosed")
+          .setScale(2);
+        doorOpen = this.physics.add.image(770, 545, "doorOpen").setScale(2);
+        doorOpen.disableBody(true, true);
+
+        //Key
+        key = this.physics.add.staticImage(600, 55, "key").setScale(0.8);
+        key.disableBody(true, true);
+
+        //Player
+        player = this.physics.add.sprite(160, 500, "player1").setScale(1.4);
+        player.setBounce(0.2);
+        player.setCollideWorldBounds(true);
+
+        //Player Animation
+        this.anims.create({
+          key: "idle",
+          frames: [
+            { key: "player1", frame: null },
+            { key: "player2", frame: null },
+            { key: "player3", frame: null },
+            { key: "player4", frame: null, duration: 50 },
+          ],
+          frameRate: 8,
+          repeat: -1,
+        });
+
+        this.anims.create({
+          key: "run",
+          frames: [
+            { key: "run1", frame: null },
+            { key: "run2", frame: null },
+            { key: "run3", frame: null },
+            { key: "run4", frame: null },
+            { key: "run5", frame: null },
+            { key: "run6", frame: null, duration: 50 },
+          ],
+          frameRate: 8,
+          repeat: -1,
+        });
+
+        this.anims.create({
+          key: "jump",
+          frames: [
+            { key: "jump1", frame: null },
+            { key: "jump2", frame: null, duration: 50 },
+          ],
+          frameRate: 8,
+          repeat: -1,
+        });
+
+        //Setup Cursors
+        cursors = this.input.keyboard.createCursorKeys();
+
+        //Collisions
+        this.physics.add.collider(player, platforms);
+        this.physics.add.collider(player, doorClosed);
+        this.physics.add.collider(doorClosed, platforms);
+        this.physics.add.collider(doorOpen, platforms);
+        this.physics.add.collider(player, doorClosed);
+
+        //Gems
+        gems = this.physics.add.group({
+          key: "gem1",
+          repeat: 5,
+          setXY: { x: 20, y: 70, stepX: 150 },
+          immovable: true,
+          allowGravity: false,
+          setScale: { x: 2, y: 2 },
+        });
+
+        //Gem Animation
+        this.anims.create({
+          key: "shine",
+          frames: [
+            { key: "gem1", frame: null },
+            { key: "gem2", frame: null },
+            { key: "gem3", frame: null },
+            { key: "gem4", frame: null },
+            { key: "gem5", frame: null, duration: 50 },
+          ],
+          frameRate: 8,
+          repeat: -1,
+        });
+
+        Phaser.Actions.Call(gems.getChildren(), (gem) => {
+          gem.anims.play("shine");
+        });
+
+        this.physics.add.overlap(player, gems, collectGem, null, this);
+        this.physics.add.overlap(player, key, openDoor, null, this);
+        this.physics.add.overlap(player, doorOpen, () => {
+          winText.visible = true;
+          this.scene.pause();
+        });
+
+        //Eagle
+        eagle = this.physics.add.sprite(600, 150, "eagle1").setScale(1.3);
+        eagle.body.allowGravity = false;
+        eagle.setVelocityX(-100);
+
+        this.anims.create({
+          key: "fly",
+          frames: [
+            { key: "eagle1", frame: null },
+            { key: "eagle2", frame: null },
+            { key: "eagle3", frame: null },
+            { key: "eagle4", frame: null, duration: 50 },
+          ],
+          frameRate: 8,
+          repeat: -1,
+        });
+
+        eagle.anims.play("fly", true);
+
+        this.physics.add.overlap(player, eagle, () => resetPlayer(this));
+
+        //Heart
+        heart = this.physics.add.group({
+          key: "heart",
+          repeat: 2,
+          setXY: { x: 690, y: 30, stepX: 40 },
+          immovable: true,
+          allowGravity: false,
+          setScale: { x: 0.1, y: 0.1 },
+        });
+
+        music = this.sound.add("music");
+        music.play();
+
+        //  The score
+        scoreText = this.add.text(16, 10, "Score: 0", {
+          fontSize: "32px",
+          fill: "#000",
+        });
+
+        winText = this.add.text(350, 250, "You won!!!", {
+          fontSize: "32px",
+          fill: "#000",
+        });
+        winText.visible = false;
+
+        gameOverText = this.add.text(350, 250, "Game Over!!!", {
+          fontSize: "32px",
+          fill: "#000",
+        });
+        gameOverText.visible = false;
+      }
+
+      function update() {
+        if (gameOver) {
+          return;
+        }
+
+        if (eagle.x < 400) {
+          eagle.flipX = true;
+          eagle.setVelocityX(100);
+        }
+        if (eagle.x > 650) {
+          eagle.flipX = false;
+          eagle.setVelocityX(-100);
+        }
+
+        if (cursors.left.isDown) {
+          player.setVelocityX(-160);
+          player.flipX = true;
+          player.anims.play("run", true);
+        } else if (cursors.right.isDown) {
+          player.flipX = false;
+          player.setVelocityX(160);
+
+          player.anims.play("run", true);
+        } else {
+          player.setVelocityX(0);
+          player.anims.play("idle", true);
+        }
+
+        if (cursors.up.isDown && player.body.touching.down) {
+          player.setVelocityY(-330);
+          player.anims.play("jump", true);
+        }
+      }
+
+      function collectGem(player, gem) {
+        gem.disableBody(true, true);
+        //  Add and update the score
+        score += 10;
+        scoreText.setText("Score: " + score);
+
+        if (gems.countActive(true) === 0) {
+          key.enableBody(true, 400, 55, true, true);
+        }
+      }
+
+      function openDoor(player, key) {
+        key.disableBody(true, true);
+        doorClosed.disableBody(true, true);
+        doorOpen.enableBody(true, 770, 545, true, true);
+      }
+
+      function resetPlayer(game) {
+        if (health === 2) {
+          overGame(game);
+        }
+
+        heart.children.entries[health++].visible = false;
+        player.setPosition(160, 500);
+      }
+
+      function overGame(game) {
+        gameOverText.visible = true;
+        game.scene.pause();
+      }
+    </script>
+  </body>
+</html>
